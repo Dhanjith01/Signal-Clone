@@ -3,8 +3,8 @@ from fastapi import Depends, FastAPI
 from app.core.config import settings
 from app.database.database import Base, engine
 from app.dependencies import get_current_user
-from app.models import User
-from app.routers import auth_router
+from app.models import Contact, User
+from app.routers import auth_router, contacts_router
 
 
 app = FastAPI(
@@ -16,6 +16,7 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
+app.include_router(contacts_router)
 
 
 @app.get("/health")

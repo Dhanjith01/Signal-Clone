@@ -13,7 +13,6 @@ class UserRepository:
         statement = select(User).where(
             User.user_id == user_id
         )
-
         return self.db.scalar(statement)
 
     def get_by_phone_number(
@@ -24,7 +23,6 @@ class UserRepository:
         statement = select(User).where(
             User.phone_number == phone_number
         )
-
         return self.db.scalar(statement)
 
     def get_by_username(
@@ -35,8 +33,19 @@ class UserRepository:
         statement = select(User).where(
             User.username == username
         )
-
         return self.db.scalar(statement)
+
+    def search(self, query: str) -> list[User]:
+        statement = (
+            select(User)
+            .where(
+                (User.username.ilike(f"%{query}%"))
+                | (User.phone_number.ilike(f"%{query}%"))
+            )
+            .limit(20)
+        )
+
+        return list(self.db.scalars(statement).all())
 
     def create(
         self,
