@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.database.database import Base, engine
 from app.dependencies import get_current_user
 from app.models import Contact, User
-from app.routers import auth_router, contacts_router
+from app.routers import auth_router, contacts_router, messages_router
 
 
 app = FastAPI(
@@ -17,7 +17,7 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
 app.include_router(contacts_router)
-
+app.include_router(messages_router)
 
 @app.get("/health")
 def health_check():
