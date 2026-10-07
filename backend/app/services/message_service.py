@@ -6,7 +6,8 @@ from app.repositories.message_repository import MessageRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.message import SendDirectMessageRequest
 from app.strategies.message_strategy_factory import MessageStrategyFactory
-
+from fastapi import HTTPException, status
+from app.core.constants import MessageStatus
 
 class MessageService:
 
@@ -54,4 +55,53 @@ class MessageService:
         return self.message_repository.get_direct_messages(
             user_id=current_user.user_id,
             other_user_id=other_user_id
+        )
+        
+    def update_message_status(
+        self,
+        current_user: User,
+        message_id: int,
+        new_status: str
+    ) -> Message:
+
+        if new_status not in MessageStatus.VALID_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid message status"
+            )
+    
+        message = self.message_repository.get_by_id(
+            message_id
+        )
+    
+        if not message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Message not found"
+            )
+    
+        if message.receiver_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot update this message status"
+            )
+    
+        status_order = {
+            MessageStatus.SENT: 1,
+            MessageStatus.DELIVERED: 2,
+            MessageStatus.READ: 3,
+        }
+    
+        current_status = status_order.get(message.status)
+        requested_status = status_order.get(new_status)
+    
+        if requested_status < current_status:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message status cannot move backwards"
+            )
+    
+        return self.message_repository.update_status(
+            message,
+            new_status
         )

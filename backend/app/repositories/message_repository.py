@@ -31,6 +31,17 @@ class MessageRepository:
 
         return message
 
+    def get_by_id(
+        self,
+        message_id: int
+    ) -> Message | None:
+
+        statement = select(Message).where(
+            Message.message_id == message_id
+        )
+
+        return self.db.scalar(statement)
+
     def get_direct_messages(
         self,
         user_id: int,
@@ -59,13 +70,15 @@ class MessageRepository:
 
         return list(self.db.scalars(statement).all())
 
-    def get_by_id(
+    def update_status(
         self,
-        message_id: int
-    ) -> Message | None:
+        message: Message,
+        status: str
+    ) -> Message:
 
-        statement = select(Message).where(
-            Message.message_id == message_id
-        )
+        message.status = status
 
-        return self.db.scalar(statement)
+        self.db.commit()
+        self.db.refresh(message)
+
+        return message

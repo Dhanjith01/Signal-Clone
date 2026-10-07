@@ -6,7 +6,8 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.message import (
     MessageResponse,
-    SendDirectMessageRequest
+    SendDirectMessageRequest,
+    UpdateMessageStatusRequest
 )
 from app.services.message_service import MessageService
 
@@ -49,4 +50,22 @@ def get_direct_messages(
     return service.get_direct_messages(
         current_user,
         user_id
+    )
+    
+@router.patch(
+    "/{message_id}/status",
+    response_model=MessageResponse
+)
+def update_message_status(
+    message_id: int,
+    request: UpdateMessageStatusRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    service = MessageService(db)
+
+    return service.update_message_status(
+        current_user=current_user,
+        message_id=message_id,
+        new_status=request.status
     )

@@ -9,6 +9,10 @@ class SendDirectMessageRequest(BaseModel):
     media_url: str | None = None
 
 
+class UpdateMessageStatusRequest(BaseModel):
+    status: str
+
+
 class MessageResponse(BaseModel):
     message_id: int
     sender_id: int
