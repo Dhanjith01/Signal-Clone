@@ -1,11 +1,14 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI, WebSocket
 
 from app.core.config import settings
 from app.database.database import Base, engine
-from app.dependencies import get_current_user
-from app.models import Contact, User
+from app.events.event import EventPublisher
 from app.routers import auth_router, contacts_router, messages_router
+from app.websocket.handler import handle_message_created, websocket_handler
+from app.websocket.manager import WebSocketManager
 
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.app_name,
@@ -13,29 +16,38 @@ app = FastAPI(
 )
 
 
-Base.metadata.create_all(bind=engine)
+websocket_manager = WebSocketManager()
+event_publisher = EventPublisher()
+
+
+async def on_message_created(event):
+    await handle_message_created(
+        event,
+        websocket_manager
+    )
+
+
+event_publisher.subscribe(
+    "message.created",
+    on_message_created
+)
 
 app.include_router(auth_router)
 app.include_router(contacts_router)
 app.include_router(messages_router)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok",
-        "application": settings.app_name
+        "status": "ok"
     }
 
 
-@app.get("/me")
-def get_me(
-    current_user: User = Depends(get_current_user)
-):
-    return {
-        "user_id": current_user.user_id,
-        "phone_number": current_user.phone_number,
-        "username": current_user.username,
-        "profile_picture": current_user.profile_picture,
-        "status": current_user.status,
-        "last_seen": current_user.last_seen
-    }
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket_handler(
+        websocket=websocket,
+        manager=websocket_manager,
+        event_publisher=event_publisher
+    )
